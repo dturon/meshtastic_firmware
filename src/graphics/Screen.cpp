@@ -1394,103 +1394,159 @@ static void drawNodeInfo(OLEDDisplay *display, OLEDDisplayUiState *state, int16_
         }
     }
 
-    meshtastic_NodeInfoLite *node = nodeDB->getMeshNodeByIndex(nodeIndex);
+    meshtastic_NodeInfoLite *node1 = nodeDB->getMeshNodeByIndex(nodeIndex);
+    meshtastic_NodeInfoLite *node2 = nodeDB->getMeshNodeByIndex((nodeIndex + 1) % nodeDB->getNumMeshNodes());
+    meshtastic_NodeInfoLite *node3 = nodeDB->getMeshNodeByIndex((nodeIndex + 2) % nodeDB->getNumMeshNodes());
+    meshtastic_NodeInfoLite *node4 = nodeDB->getMeshNodeByIndex((nodeIndex + 3) % nodeDB->getNumMeshNodes());
+    meshtastic_NodeInfoLite *node5 = nodeDB->getMeshNodeByIndex((nodeIndex + 4) % nodeDB->getNumMeshNodes());
+    meshtastic_NodeInfoLite *node6 = nodeDB->getMeshNodeByIndex((nodeIndex + 5) % nodeDB->getNumMeshNodes());
 
-    display->setFont(FONT_SMALL);
+    display->setFont(FONT_SUPER_SMALL);
 
     // The coordinates define the left starting point of the text
     display->setTextAlignment(TEXT_ALIGN_LEFT);
 
     if (config.display.displaymode == meshtastic_Config_DisplayConfig_DisplayMode_INVERTED) {
-        display->fillRect(0 + x, 0 + y, x + display->getWidth(), y + FONT_HEIGHT_SMALL);
+        display->fillRect(0 + x, 0 + y, x + display->getWidth(), y + FONT_HEIGHT_SUPER_SMALL);
     }
 
-    const char *username = node->has_user ? node->user.long_name : "Unknown Name";
+    // const char *username = node->has_user ? node->user.long_name : "Unknown Name";
 
-    static char signalStr[20];
+    // static char signalStr[20];
 
-    // section here to choose whether to display hops away rather than signal strength if more than 0 hops away.
-    if (node->hops_away > 0) {
-        snprintf(signalStr, sizeof(signalStr), "Hops Away: %d", node->hops_away);
+    char node1str[SCREEN_WIDTH];
+    char node2str[SCREEN_WIDTH];
+    char node3str[SCREEN_WIDTH];
+    char node4str[SCREEN_WIDTH];
+    char node5str[SCREEN_WIDTH];
+    char node6str[SCREEN_WIDTH];
+    // char *nodestr[] = {node1str, node2str, node3str, node4str, node5str, node6str};
+
+    // from getTimeAgoStr function
+    static char lastStr1[20];
+    static char lastStr2[20];
+    static char lastStr3[20];
+    static char lastStr4[20];
+    static char lastStr5[20];
+    static char lastStr6[20];
+
+    screen->getTimeAgoStr(sinceLastSeen(node1), lastStr1, sizeof(lastStr1));
+    snprintf(node1str, sizeof(node1str), "%04s| Hops: %d Signal: %d%% Last: %s", node1->user.short_name, node1->hops_away,
+             clamp((int)((node1->snr + 10) * 5), 0, 100), lastStr1);
+    screen->getTimeAgoStr(sinceLastSeen(node2), lastStr2, sizeof(lastStr2));
+    snprintf(node2str, sizeof(node1str), "%04s| Hops: %d Signal: %d%% Last: %s", node2->user.short_name, node2->hops_away,
+             clamp((int)((node2->snr + 10) * 5), 0, 100), lastStr2);
+    screen->getTimeAgoStr(sinceLastSeen(node3), lastStr3, sizeof(lastStr3));
+    snprintf(node3str, sizeof(node1str), "%04s| Hops: %d Signal: %d%% Last: %s", node3->user.short_name, node3->hops_away,
+             clamp((int)((node3->snr + 10) * 5), 0, 100), lastStr3);
+    screen->getTimeAgoStr(sinceLastSeen(node4), lastStr4, sizeof(lastStr4));
+    snprintf(node4str, sizeof(node1str), "%04s| Hops: %d Signal: %d%% Last: %s", node4->user.short_name, node4->hops_away,
+             clamp((int)((node4->snr + 10) * 5), 0, 100), lastStr4);
+    screen->getTimeAgoStr(sinceLastSeen(node5), lastStr5, sizeof(lastStr5));
+    snprintf(node5str, sizeof(node1str), "%04s| Hops: %d Signal: %d%% Last: %s", node5->user.short_name, node5->hops_away,
+             clamp((int)((node5->snr + 10) * 5), 0, 100), lastStr5);
+    screen->getTimeAgoStr(sinceLastSeen(node6), lastStr6, sizeof(lastStr6));
+    snprintf(node6str, sizeof(node1str), "%04s| Hops: %d Signal: %d%% Last: %s", node6->user.short_name, node6->hops_away,
+             clamp((int)((node6->snr + 10) * 5), 0, 100), lastStr6);
+
+    /*
+    useTimestamp = deltaToTimestamp(sinceLastSeen(node1), &timestampHours, &timestampMinutes, &daysAgo);
+    if (useTimestamp) {
+        snprintf(node1str, sizeof(node1str), "%s| Hops: %d Last: %lid %02u:%02u Signal: %d%%", node1->user.short_name,
+                 node1->hops_away, (long)daysAgo, (unsigned int)timestampHours, (unsigned int)timestampMinutes,
+                 clamp((int)((node1->snr + 10) * 5), 0, 100));
     } else {
-        snprintf(signalStr, sizeof(signalStr), "Signal: %d%%", clamp((int)((node->snr + 10) * 5), 0, 100));
+        snprintf(node1str, sizeof(node1str), "%s| Hops: %d Last: %dsec Signal: %d%%", node1->user.short_name, node1->hops_away,
+                 sinceLastSeen(node1), clamp((int)((node1->snr + 10) * 5), 0, 100));
     }
+*/
 
-    static char lastStr[20];
-    screen->getTimeAgoStr(sinceLastSeen(node), lastStr, sizeof(lastStr));
-
-    static char distStr[20];
-    if (config.display.units == meshtastic_Config_DisplayConfig_DisplayUnits_IMPERIAL) {
-        strncpy(distStr, "? mi", sizeof(distStr)); // might not have location data
-    } else {
-        strncpy(distStr, "? km", sizeof(distStr));
-    }
-    meshtastic_NodeInfoLite *ourNode = nodeDB->getMeshNode(nodeDB->getNodeNum());
-    const char *fields[] = {username, lastStr, signalStr, distStr, NULL};
-    int16_t compassX = 0, compassY = 0;
-    uint16_t compassDiam = Screen::getCompassDiam(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-    // coordinates for the center of the compass/circle
-    if (config.display.displaymode == meshtastic_Config_DisplayConfig_DisplayMode_DEFAULT) {
-        compassX = x + SCREEN_WIDTH - compassDiam / 2 - 5;
-        compassY = y + SCREEN_HEIGHT / 2;
-    } else {
-        compassX = x + SCREEN_WIDTH - compassDiam / 2 - 5;
-        compassY = y + FONT_HEIGHT_SMALL + (SCREEN_HEIGHT - FONT_HEIGHT_SMALL) / 2;
-    }
-    bool hasNodeHeading = false;
-
-    if (ourNode && (hasValidPosition(ourNode) || screen->hasHeading())) {
-        const meshtastic_PositionLite &op = ourNode->position;
-        float myHeading;
-        if (screen->hasHeading())
-            myHeading = (screen->getHeading()) * PI / 180; // gotta convert compass degrees to Radians
-        else
-            myHeading = screen->estimatedHeading(DegD(op.latitude_i), DegD(op.longitude_i));
-        screen->drawCompassNorth(display, compassX, compassY, myHeading);
-
-        if (hasValidPosition(node)) {
-            // display direction toward node
-            hasNodeHeading = true;
-            const meshtastic_PositionLite &p = node->position;
-            float d =
-                GeoCoord::latLongToMeter(DegD(p.latitude_i), DegD(p.longitude_i), DegD(op.latitude_i), DegD(op.longitude_i));
-
-            if (config.display.units == meshtastic_Config_DisplayConfig_DisplayUnits_IMPERIAL) {
-                if (d < (2 * MILES_TO_FEET))
-                    snprintf(distStr, sizeof(distStr), "%.0f ft", d * METERS_TO_FEET);
-                else
-                    snprintf(distStr, sizeof(distStr), "%.1f mi", d * METERS_TO_FEET / MILES_TO_FEET);
-            } else {
-                if (d < 2000)
-                    snprintf(distStr, sizeof(distStr), "%.0f m", d);
-                else
-                    snprintf(distStr, sizeof(distStr), "%.1f km", d / 1000);
-            }
-
-            float bearingToOther =
-                GeoCoord::bearing(DegD(op.latitude_i), DegD(op.longitude_i), DegD(p.latitude_i), DegD(p.longitude_i));
-            // If the top of the compass is a static north then bearingToOther can be drawn on the compass directly
-            // If the top of the compass is not a static north we need adjust bearingToOther based on heading
-            if (!config.display.compass_north_top)
-                bearingToOther -= myHeading;
-            screen->drawNodeHeading(display, compassX, compassY, compassDiam, bearingToOther);
+    /*
+        // section here to choose whether to display hops away rather than signal strength if more than 0 hops away.
+        if (node->hops_away > 0) {
+            snprintf(signalStr, sizeof(signalStr), "Hops Away: %d", node->hops_away);
+        } else {
+            snprintf(signalStr, sizeof(signalStr), "Signal: %d%%", clamp((int)((node->snr + 10) * 5), 0, 100));
         }
-    }
-    if (!hasNodeHeading) {
-        // direction to node is unknown so display question mark
-        // Debug info for gps lock errors
-        // LOG_DEBUG("ourNode %d, ourPos %d, theirPos %d\n", !!ourNode, ourNode && hasValidPosition(ourNode),
-        // hasValidPosition(node));
-        display->drawString(compassX - FONT_HEIGHT_SMALL / 4, compassY - FONT_HEIGHT_SMALL / 2, "?");
-    }
-    display->drawCircle(compassX, compassY, compassDiam / 2);
 
+        static char lastStr[20];
+        screen->getTimeAgoStr(sinceLastSeen(node), lastStr, sizeof(lastStr));
+
+        static char distStr[20];
+        if (config.display.units == meshtastic_Config_DisplayConfig_DisplayUnits_IMPERIAL) {
+            strncpy(distStr, "? mi", sizeof(distStr)); // might not have location data
+        } else {
+            strncpy(distStr, "? km", sizeof(distStr));
+        }
+        */
+    // meshtastic_NodeInfoLite *ourNode = nodeDB->getMeshNode(nodeDB->getNodeNum());
+    const char *fields[] = {node1str, node2str, node3str, node4str, node5str, node6str, NULL};
+    /**
+        int16_t compassX = 0, compassY = 0;
+        uint16_t compassDiam = Screen::getCompassDiam(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+        // coordinates for the center of the compass/circle
+        if (config.display.displaymode == meshtastic_Config_DisplayConfig_DisplayMode_DEFAULT) {
+            compassX = x + SCREEN_WIDTH - compassDiam / 2 - 5;
+            compassY = y + SCREEN_HEIGHT / 2;
+        } else {
+            compassX = x + SCREEN_WIDTH - compassDiam / 2 - 5;
+            compassY = y + FONT_HEIGHT_SUPER_SMALL + (SCREEN_HEIGHT - FONT_HEIGHT_SUPER_SMALL) / 2;
+        }
+        bool hasNodeHeading = false;
+
+        if (ourNode && (hasValidPosition(ourNode) || screen->hasHeading())) {
+            const meshtastic_PositionLite &op = ourNode->position;
+            float myHeading;
+            if (screen->hasHeading())
+                myHeading = (screen->getHeading()) * PI / 180; // gotta convert compass degrees to Radians
+            else
+                myHeading = screen->estimatedHeading(DegD(op.latitude_i), DegD(op.longitude_i));
+            screen->drawCompassNorth(display, compassX, compassY, myHeading);
+
+            if (hasValidPosition(node)) {
+                // display direction toward node
+                hasNodeHeading = true;
+                const meshtastic_PositionLite &p = node->position;
+                float d =
+                    GeoCoord::latLongToMeter(DegD(p.latitude_i), DegD(p.longitude_i), DegD(op.latitude_i), DegD(op.longitude_i));
+
+                if (config.display.units == meshtastic_Config_DisplayConfig_DisplayUnits_IMPERIAL) {
+                    if (d < (2 * MILES_TO_FEET))
+                        snprintf(distStr, sizeof(distStr), "%.0f ft", d * METERS_TO_FEET);
+                    else
+                        snprintf(distStr, sizeof(distStr), "%.1f mi", d * METERS_TO_FEET / MILES_TO_FEET);
+                } else {
+                    if (d < 2000)
+                        snprintf(distStr, sizeof(distStr), "%.0f m", d);
+                    else
+                        snprintf(distStr, sizeof(distStr), "%.1f km", d / 1000);
+                }
+
+                float bearingToOther =
+                    GeoCoord::bearing(DegD(op.latitude_i), DegD(op.longitude_i), DegD(p.latitude_i), DegD(p.longitude_i));
+                // If the top of the compass is a static north then bearingToOther can be drawn on the compass directly
+                // If the top of the compass is not a static north we need adjust bearingToOther based on heading
+                if (!config.display.compass_north_top)
+                    bearingToOther -= myHeading;
+                screen->drawNodeHeading(display, compassX, compassY, compassDiam, bearingToOther);
+            }
+        }
+        if (!hasNodeHeading) {
+            // direction to node is unknown so display question mark
+            // Debug info for gps lock errors
+            // LOG_DEBUG("ourNode %d, ourPos %d, theirPos %d\n", !!ourNode, ourNode && hasValidPosition(ourNode),
+            // hasValidPosition(node));
+            display->drawString(compassX - FONT_HEIGHT_SUPER_SMALL / 4, compassY - FONT_HEIGHT_SUPER_SMALL / 2, "?");
+        }
+        display->drawCircle(compassX, compassY, compassDiam / 2);
+    */
     if (config.display.displaymode == meshtastic_Config_DisplayConfig_DisplayMode_INVERTED) {
         display->setColor(BLACK);
     }
     // Must be after distStr is populated
     screen->drawColumns(display, x, y, fields);
+    nodeIndex = (nodeIndex + 6) % nodeDB->getNumMeshNodes();
 }
 
 #if defined(ESP_PLATFORM) && defined(USE_ST7789)
